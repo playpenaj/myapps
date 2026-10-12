@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Nexus Launchpad - Central App Command</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
+    <style>
+        html, body {
+            max-width: 100vw;
+            overflow-x: hidden !important;
+            touch-action: manipulation;
+        }
+
+        /* Dynamic Fluid Typography scaling seamlessly across mobile and desktop devices */
+        :root {
+            --fluid-title: clamp(0.9rem, 3.8vw, 1.25rem);
+            --fluid-desc: clamp(0.68rem, 2.6vw, 0.85rem);
+            --fluid-badge: clamp(0.58rem, 2.2vw, 0.75rem);
+            --fluid-hero: clamp(1.3rem, 4.8vw, 2.25rem);
+        }
+
+        .text-fluid-title { font-size: var(--fluid-title); }
+        .text-fluid-desc { font-size: var(--fluid-desc); }
+        .text-fluid-badge { font-size: var(--fluid-badge); }
+        .text-fluid-hero { font-size: var(--fluid-hero); }
+
+        .glass-card {
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+        }
+
+        /* Clean subtle scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(156, 163, 175, 0.4);
+            border-radius: 9999px;
+        }
+    </style>
+</head>
+<body class="h-full bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 transition-colors duration-300 flex flex-col justify-between selection:bg-indigo-500 selection:text-white overflow-x-hidden">
+
+    <!-- Toast Notification Banner -->
+    <div id="toast" class="fixed bottom-4 left-1/2 -translate-x-1/2 sm:translate-x-0 sm:left-auto sm:right-6 z-50 transform translate-y-24 opacity-0 transition-all duration-300 bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900 px-4 py-2.5 rounded-xl shadow-2xl flex items-center space-x-2.5 text-xs sm:text-sm font-medium pointer-events-none">
+        <i id="toast-icon" class="fa-solid fa-circle-check text-emerald-400 dark:text-emerald-600"></i>
+        <span id="toast-message">Action successful!</span>
+    </div>
+
+    <!-- Header Navigation -->
+    <header class="sticky top-0 z-40 bg-white/80 dark:bg-slate-900/80 glass-card border-b border-slate-200/80 dark:border-slate-800 px-3 sm:px-6 py-3">
+        <div class="max-w-7xl mx-auto flex items-center justify-between">
+            <div class="flex items-center space-x-2.5">
+                <div class="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-tr from-indigo-600 to-violet-500 flex items-center justify-center text-white shadow-lg shadow-indigo-500/30">
+                    <i class="fa-solid fa-rocket text-base sm:text-lg"></i>
+                </div>
+                <div>
+                    <h1 class="font-extrabold text-base sm:text-lg leading-tight bg-gradient-to-r from-indigo-600 to-violet-500 dark:from-indigo-400 dark:to-violet-400 bg-clip-text text-transparent">
+                        Nexus Hub
+                    </h1>
+                    <p class="text-[10px] sm:text-xs text-slate-500 dark:text-slate-400 font-medium">Smart App Launcher</p>
+                </div>
+            </div>
+
+            <!-- Stats Badge & Theme Toggle -->
+            <div class="flex items-center space-x-2 sm:space-x-3">
+                <div class="hidden xs:flex items-center space-x-2 bg-slate-100 dark:bg-slate-800/80 px-3 py-1.5 rounded-full border border-slate-200 dark:border-slate-700 text-fluid-badge font-semibold">
+                    <span class="flex items-center space-x-1 text-indigo-600 dark:text-indigo-400">
+                        <i class="fa-solid fa-fire"></i>
+                        <span id="total-launches-badge">0</span>
+                    </span>
+                    <span class="text-slate-300 dark:text-slate-600">|</span>
+                    <span class="text-slate-600 dark:text-slate-300 truncate max-w-[90px] sm:max-w-[140px]" id="top-app-name">Top: None</span>
+                </div>
+
+                <!-- Dark Mode Toggle Button -->
+                <button id="theme-toggle" class="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 flex items-center justify-center transition text-slate-600 dark:text-slate-300 focus:outline-none" title="Toggle Dark/Light Mode">
+                    <i id="theme-icon" class="fa-solid fa-moon text-sm sm:text-base"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content Layout -->
+    <main class="flex-grow max-w-7xl w-full mx-auto px-3 sm:px-6 py-4 sm:py-8">
+        
+        <!-- Welcome Hero Banner -->
+        <div class="relative overflow-hidden rounded-2xl sm:rounded-3xl bg-gradient-to-r from-indigo-600 via-indigo-700 to-violet-700 text-white p-4 sm:p-8 shadow-lg mb-6 sm:mb-8">
+            <div class="absolute -right-8 -bottom-8 w-48 h-48 sm:w-64 sm:h-64 bg-white/10 rounded-full blur-2xl pointer-events-none"></div>
+            <div class="relative z-10 max-w-2xl">
+                <span class="inline-flex items-center space-x-1.5 bg-white/20 px-2.5 py-0.5 sm:py-1 rounded-full text-fluid-badge font-semibold backdrop-blur-md mb-2 sm:mb-3 text-indigo-100">
+                    <i class="fa-solid fa-bolt text-amber-300"></i>
+                    <span>Click box to launch app</span>
+                </span>
+                <h2 class="text-fluid-hero font-extrabold tracking-tight mb-2">My Applications</h2>
+                <p class="text-indigo-100 text-fluid-desc leading-relaxed mb-4 sm:mb-6">
+                    Apps dynamically re-sort with your most used app automatically pinned at the top. Tap anywhere on an app card to open it immediately.
+                </p>
+
+                <!-- Search and Reset Control Bar -->
+                <div class="flex flex-row gap-2">
+                    <div class="relative flex-grow">
+                        <i class="fa-solid fa-magnifying-glass absolute left-3 sm:left-4 top-1/2 -translate-y-1/2 text-slate-300 text-xs sm:text-sm"></i>
+                        <input type="text" id="app-search" placeholder="Search apps (e.g. SG TT League, speed, finance)..." 
+                            class="w-full bg-white/15 dark:bg-slate-900/40 border border-white/20 rounded-xl pl-9 sm:pl-11 pr-3 py-2 sm:py-2.5 text-xs sm:text-sm text-white placeholder-indigo-200 focus:outline-none focus:ring-2 focus:ring-white/50 backdrop-blur-md transition">
+                    </div>
+                    <button id="reset-stats" class="bg-white/15 hover:bg-white/25 text-white text-xs font-semibold px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl border border-white/20 transition backdrop-blur-md flex items-center justify-center space-x-1.5 shrink-0" title="Reset Launch Counters">
+                        <i class="fa-solid fa-rotate-right text-xs"></i>
+                        <span class="hidden sm:inline">Reset Stats</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Section Header -->
+        <div class="flex items-center justify-between mb-3 sm:mb-6">
+            <div>
+                <h3 class="text-sm sm:text-xl font-bold tracking-tight text-slate-900 dark:text-white">App Command Center</h3>
+                <p class="text-[11px] sm:text-xs text-slate-500 dark:text-slate-400">Sorted automatically by launch frequency</p>
+            </div>
+            <div class="text-[11px] sm:text-xs font-semibold text-slate-500 dark:text-slate-400 bg-slate-200/60 dark:bg-slate-800/60 px-2.5 py-1 rounded-lg">
+                <span id="app-count">5</span> Apps
+            </div>
+        </div>
+
+        <!-- Applications Grid: 2 columns on Mobile (grid-cols-2), 2 on Tablet, 3-5 on Desktop -->
+        <div id="apps-grid" class="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-2.5 sm:gap-6">
+            <!-- Dynamic Cards injected via JavaScript -->
+        </div>
+
+        <!-- Empty Search Result State -->
+        <div id="no-results" class="hidden text-center py-12">
+            <div class="w-12 h-12 sm:w-16 sm:h-16 bg-slate-200 dark:bg-slate-800 rounded-2xl mx-auto flex items-center justify-center text-slate-400 text-xl sm:text-2xl mb-3">
+                <i class="fa-solid fa-magnifying-glass-slash"></i>
+            </div>
+            <h4 class="text-sm sm:text-base font-bold text-slate-700 dark:text-slate-300 mb-1">No applications found</h4>
+            <p class="text-xs text-slate-500">Try searching for keywords like "SG TT League", "speed", "profile", or "trainer".</p>
+        </div>
+
+        <!-- Stats Overview Row -->
+        <div class="mt-8 sm:mt-14 grid grid-cols-3 gap-2 sm:gap-6">
+            <div class="bg-white dark:bg-slate-900 p-3 sm:p-6 rounded-xl sm:rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm flex flex-col sm:flex-row items-center sm:space-x-4 text-center sm:text-left">
+                <div class="w-8 h-8 sm:w-12 sm:h-12 rounded-lg sm:rounded-xl bg-indigo-50 dark:bg-indigo-950/50 text-indigo-600 dark:text-indigo-400 flex items-center justify-center text-sm sm:text-xl mb-1.5 sm:mb-0 shrink-0">
+                    <i class="fa-solid fa-chart-line"></i>
+                </div>
+                <div class="min-w-0 w-full">
+                    <span class="text-[10px] sm:text-xs font-medium text-slate-500 dark:text-slate-400 block truncate">Total Launches</span>
+                    <h4 id="stat-total-launches" class="text-sm sm:text-xl font-bold text-slate-900 dark:text-white truncate">0</h4>
+                </div>
+            </div>
+
+            <div class="bg-white dark:bg-slate-900 p-3 sm:p-6 rounded-xl sm:rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm flex flex-col sm:flex-row items-center sm:space-x-4 text-center sm:text-left">
+                <div class="w-8 h-8 sm:w-12 sm:h-12 rounded-lg sm:rounded-xl bg-amber-50 dark:bg-amber-950/50 text-amber-600 dark:text-amber-400 flex items-center justify-center text-sm sm:text-xl mb-1.5 sm:mb-0 shrink-0">
+                    <i class="fa-solid fa-crown"></i>
+                </div>
+                <div class="min-w-0 w-full">
+                    <span class="text-[10px] sm:text-xs font-medium text-slate-500 dark:text-slate-400 block truncate">Top App</span>
+                    <h4 id="stat-most-used" class="text-xs sm:text-base font-bold text-slate-900 dark:text-white truncate">None</h4>
+                </div>
+            </div>
+
+            <div class="bg-white dark:bg-slate-900 p-3 sm:p-6 rounded-xl sm:rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm flex flex-col sm:flex-row items-center sm:space-x-4 text-center sm:text-left">
+                <div class="w-8 h-8 sm:w-12 sm:h-12 rounded-lg sm:rounded-xl bg-emerald-50 dark:bg-emerald-950/50 text-emerald-600 dark:text-emerald-400 flex items-center justify-center text-sm sm:text-xl mb-1.5 sm:mb-0 shrink-0">
+                    <i class="fa-solid fa-clock-rotate-left"></i>
+                </div>
+                <div class="min-w-0 w-full">
+                    <span class="text-[10px] sm:text-xs font-medium text-slate-500 dark:text-slate-400 block truncate">Last Used</span>
+                    <h4 id="stat-last-launched" class="text-[11px] sm:text-xs font-semibold text-slate-900 dark:text-white truncate">None</h4>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="mt-12 border-t border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 py-4 sm:py-6 text-center text-[11px] sm:text-xs text-slate-500 dark:text-slate-400">
+        <p>Nexus Hub &bull; Tap any app card to launch in a new window.</p>
+    </footer>
+
+    <script>
+        // Applications dataset with SG TT League replacing speech-to-text
+        const appsData = [
+            {
+                id: 'sttl_app',
+                title: 'SG TT League',
+                description: 'Singapore Table Tennis League management, schedules & match standings.',
+                url: 'https://playpenaj.github.io/ttsgv4/sttl_app.html',
+                category: 'Sports / Table Tennis',
+                icon: 'fa-solid fa-trophy',
+                color: 'from-blue-600 to-indigo-600',
+                lightBg: 'bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400'
+            },
+            {
+                id: 'speedalert',
+                title: 'Speed Alert',
+                description: 'Real-time velocity monitoring & safety alert system.',
+                url: 'https://playpenaj.github.io/speedalert/index.html',
+                category: 'Utilities',
+                icon: 'fa-solid fa-gauge-high',
+                color: 'from-amber-500 to-orange-600',
+                lightBg: 'bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400'
+            },
+            {
+                id: 'xtracker',
+                title: 'XTracker',
+                description: 'Expense management, budget & daily transaction tracker.',
+                url: 'https://playpenaj.github.io/xtracker/index.html',
+                category: 'Finance',
+                icon: 'fa-solid fa-wallet',
+                color: 'from-emerald-600 to-teal-600',
+                lightBg: 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400'
+            },
+            {
+                id: 'mytrainer',
+                title: 'My Trainer',
+                description: 'Fitness routines, exercise planner & workout log.',
+                url: 'https://playpenaj.github.io/mytrainer/index.html',
+                category: 'Fitness',
+                icon: 'fa-solid fa-dumbbell',
+                color: 'from-rose-600 to-pink-600',
+                lightBg: 'bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400'
+            },
+            {
+                id: 'myprofile',
+                title: 'My Profile',
+                description: 'Personal profile hub, background & portfolio summary.',
+                url: 'https://playpenaj.github.io/myprofile/index.html',
+                category: 'Personal',
+                icon: 'fa-solid fa-id-badge',
+                color: 'from-purple-600 to-indigo-600',
+                lightBg: 'bg-purple-50 dark:bg-purple-950/40 text-purple-600 dark:text-purple-400'
+            }
+        ];
+
+        // Retrieve stored launch statistics from localStorage
+        function getUsageData() {
+            const stored = localStorage.getItem('nexus_app_usage_v3');
+            if (stored) {
+                try { return JSON.parse(stored); } catch(e) { return {}; }
+            }
+            const initial = {};
+            appsData.forEach(app => {
+                initial[app.id] = { clicks: 0, lastLaunched: null };
+            });
+            localStorage.setItem('nexus_app_usage_v3', JSON.stringify(initial));
+            return initial;
+        }
+
+        // Open application on whole card click and increment click counter
+        window.launchAppBox = function(appId, url, event) {
+            // Prevent duplicate triggers if clicking copy button
+            if (event.target.closest('.no-card-launch')) return;
+
+            let usage = getUsageData();
+            if (!usage[appId]) {
+                usage[appId] = { clicks: 0, lastLaunched: null };
+            }
+            usage[appId].clicks += 1;
+            usage[appId].lastLaunched = new Date().toISOString();
+            localStorage.setItem('nexus_app_usage_v3', JSON.stringify(usage));
+
+            // Immediately open destination URL in new tab
+            window.open(url, '_blank');
+
+            // Re-render grid with updated usage-based sorting
+            renderDashboard();
+            showToast('Launching application...');
+        };
+
+        // Toast message feedback
+        function showToast(message) {
+            const toast = document.getElementById('toast');
+            const toastMsg = document.getElementById('toast-message');
+
+            toastMsg.textContent = message;
+            toast.classList.remove('translate-y-24', 'opacity-0');
+            setTimeout(() => {
+                toast.classList.add('translate-y-24', 'opacity-0');
+            }, 2500);
+        }
+
+        // Copy direct URL to clipboard
+        window.copyAppUrl = function(url, appName, event) {
+            event.stopPropagation();
+            const temp = document.createElement('textarea');
+            document.body.appendChild(temp);
+            temp.value = url;
+            temp.select();
+            document.execCommand('copy');
+            document.body.removeChild(temp);
+            showToast(`Copied ${appName} link!`);
+        };
+
+        // Render dashboard grid with dynamic real-time sorting
+        function renderDashboard() {
+            const usage = getUsageData();
+            const searchQuery = document.getElementById('app-search').value.toLowerCase().trim();
+            const grid = document.getElementById('apps-grid');
+
+            // Dynamic Sorting: Apps with highest click count placed at top
+            const sortedApps = [...appsData].sort((a, b) => {
+                const countA = usage[a.id]?.clicks || 0;
+                const countB = usage[b.id]?.clicks || 0;
+                return countB - countA;
+            });
+
+            // Filter search
+            const filteredApps = sortedApps.filter(app => 
+                app.title.toLowerCase().includes(searchQuery) || 
+                app.description.toLowerCase().includes(searchQuery) ||
+                app.category.toLowerCase().includes(searchQuery)
+            );
+
+            document.getElementById('app-count').textContent = filteredApps.length;
+
+            const noResults = document.getElementById('no-results');
+            if (filteredApps.length === 0) {
+                grid.innerHTML = '';
+                noResults.classList.remove('hidden');
+                return;
+            } else {
+                noResults.classList.add('hidden');
+            }
+
+            // Stat calculations
+            let totalLaunches = 0;
+            let topAppName = 'None';
+            let maxClicks = -1;
+            let lastLaunchedTime = 'None';
+            let mostRecentTimestamp = 0;
+
+            Object.keys(usage).forEach(id => {
+                const item = usage[id];
+                totalLaunches += item.clicks;
+                if (item.clicks > maxClicks && item.clicks > 0) {
+                    maxClicks = item.clicks;
+                    const matched = appsData.find(a => a.id === id);
+                    if (matched) topAppName = matched.title;
+                }
+                if (item.lastLaunched) {
+                    const time = new Date(item.lastLaunched).getTime();
+                    if (time > mostRecentTimestamp) {
+                        mostRecentTimestamp = time;
+                        const matched = appsData.find(a => a.id === id);
+                        if (matched) {
+                            lastLaunchedTime = matched.title;
+                        }
+                    }
+                }
+            });
+
+            document.getElementById('total-launches-badge').textContent = totalLaunches;
+            document.getElementById('top-app-name').textContent = `Top: ${topAppName}`;
+            document.getElementById('stat-total-launches').textContent = totalLaunches;
+            document.getElementById('stat-most-used').textContent = topAppName;
+            document.getElementById('stat-last-launched').textContent = lastLaunchedTime;
+
+            grid.innerHTML = filteredApps.map((app, index) => {
+                const appUsage = usage[app.id] || { clicks: 0 };
+                const isTopApp = index === 0 && appUsage.clicks > 0 && searchQuery === '';
+
+                return `
+                    <div onclick="launchAppBox('${app.id}', '${app.url}', event)" 
+                        class="group cursor-pointer relative bg-white dark:bg-slate-900 rounded-2xl p-3 sm:p-5 border border-slate-200/80 dark:border-slate-800 shadow-sm hover:shadow-xl hover:border-indigo-500 dark:hover:border-indigo-500 transition-all duration-300 flex flex-col justify-between transform hover:-translate-y-1 select-none overflow-hidden">
+                        
+                        ${isTopApp ? `
+                            <div class="absolute -top-1 -right-1 bg-gradient-to-r from-amber-500 to-orange-500 text-white text-[9px] sm:text-[10px] font-black px-2 py-0.5 rounded-bl-xl shadow-sm uppercase tracking-wider flex items-center space-x-1 z-10">
+                                <i class="fa-solid fa-crown text-[9px]"></i>
+                                <span>#1 Top</span>
+                            </div>
+                        ` : ''}
+
+                        <div>
+                            <!-- Header Info -->
+                            <div class="flex items-center justify-between mb-2 sm:mb-4">
+                                <div class="w-9 h-9 sm:w-12 sm:h-12 rounded-xl ${app.lightBg} flex items-center justify-center text-base sm:text-2xl shadow-inner transition group-hover:scale-105 duration-300 shrink-0">
+                                    <i class="${app.icon}"></i>
+                                </div>
+                                <div class="flex items-center space-x-1">
+                                    <button onclick="copyAppUrl('${app.url}', '${app.title.replace(/'/g, "\\'")}', event)" 
+                                        class="no-card-launch w-6 h-6 sm:w-8 sm:h-8 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 flex items-center justify-center transition" title="Copy App Link">
+                                        <i class="fa-solid fa-link text-[10px] sm:text-xs"></i>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Title & Description with Dynamic Typography -->
+                            <h4 class="text-fluid-title font-bold text-slate-900 dark:text-white mb-1 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition leading-snug line-clamp-1">
+                                ${app.title}
+                            </h4>
+                            <p class="text-fluid-desc text-slate-500 dark:text-slate-400 line-clamp-2 leading-relaxed mb-3 sm:mb-5">
+                                ${app.description}
+                            </p>
+                        </div>
+
+                        <!-- Card Footer / Launch Badge -->
+                        <div class="pt-2 sm:pt-3 border-t border-slate-100 dark:border-slate-800/80 flex items-center justify-between">
+                            <span class="text-fluid-badge font-semibold text-slate-400 dark:text-slate-500">
+                                <i class="fa-solid fa-arrow-pointer text-[9px] mr-1"></i>${appUsage.clicks} launches
+                            </span>
+                            <span class="inline-flex items-center space-x-1 text-indigo-600 dark:text-indigo-400 font-bold text-fluid-badge group-hover:translate-x-0.5 transition-transform">
+                                <span>Open</span>
+                                <i class="fa-solid fa-chevron-right text-[9px]"></i>
+                            </span>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            // Dark Mode Theme Init
+            const themeToggleBtn = document.getElementById('theme-toggle');
+            const themeIcon = document.getElementById('theme-icon');
+            const htmlElement = document.documentElement;
+
+            const currentTheme = localStorage.getItem('nexus_theme') || 'dark';
+            if (currentTheme === 'dark') {
+                htmlElement.classList.add('dark');
+                themeIcon.className = "fa-solid fa-sun text-amber-400";
+            } else {
+                htmlElement.classList.remove('dark');
+                themeIcon.className = "fa-solid fa-moon text-slate-600";
+            }
+
+            themeToggleBtn.addEventListener('click', () => {
+                if (htmlElement.classList.contains('dark')) {
+                    htmlElement.classList.remove('dark');
+                    localStorage.setItem('nexus_theme', 'light');
+                    themeIcon.className = "fa-solid fa-moon text-slate-600";
+                } else {
+                    htmlElement.classList.add('dark');
+                    localStorage.setItem('nexus_theme', 'dark');
+                    themeIcon.className = "fa-solid fa-sun text-amber-400";
+                }
+            });
+
+            // Search filter listener
+            document.getElementById('app-search').addEventListener('input', renderDashboard);
+
+            // Reset usage stats button
+            document.getElementById('reset-stats').addEventListener('click', () => {
+                localStorage.removeItem('nexus_app_usage_v3');
+                renderDashboard();
+                showToast('Launch statistics reset!');
+            });
+
+            // Initial render
+            renderDashboard();
+        });
+    </script>
+</body>
+</html>
